@@ -243,7 +243,7 @@ async function renderEditor(iv: Pending) {
         </div>
         <div class="row mt">
           <button class="btn ghost no-drag" id="later2" title="Keep this interval in the queue and deal with it later. It stays pending in Review queue.">Later</button>
-          <button class="btn ghost no-drag" id="skip" title="Discard this interval for good. Nothing gets logged and it leaves the queue. Use it when you did nothing work related.">Skip</button>
+          <button class="btn danger no-drag" id="discard" title="Discard this interval for good. Nothing gets logged and it leaves the queue. Use it when you did nothing work related.">Discard</button>
           <button class="btn primary wide no-drag" id="log">Log it</button>
         </div>
       </div>
@@ -330,10 +330,10 @@ async function renderEditor(iv: Pending) {
 
   shell.querySelector("#later")?.addEventListener("click", laterAction);
   shell.querySelector("#later2")?.addEventListener("click", laterAction);
-  shell.querySelector("#skip")?.addEventListener("click", async () => {
+  shell.querySelector("#discard")?.addEventListener("click", async () => {
     try {
       await App().Dismiss(iv.id);
-      toast("Skipped");
+      toast("Discarded");
       await afterResolve();
     } catch (e: any) {
       toast(String(e?.message ?? e), true);
