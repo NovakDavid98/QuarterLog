@@ -204,7 +204,7 @@ async function renderEditor(iv: Pending) {
         </div>
         <div class="spacer"></div>
         ${cameFromQueue ? `<button class="iconbtn no-drag" id="back" title="Back">‹</button>` : ""}
-        <button class="iconbtn no-drag" id="later" title="Later">✕</button>
+        <button class="iconbtn no-drag" id="later" title="Close this popup. The interval stays in the queue.">✕</button>
       </div>
       <div class="content fit">
         <div class="time-row">
@@ -242,8 +242,8 @@ async function renderEditor(iv: Pending) {
           </div>
         </div>
         <div class="row mt">
-          <button class="btn ghost no-drag" id="later2">Later</button>
-          <button class="btn ghost no-drag" id="skip" title="Nothing work-related this interval — discard it">Skip</button>
+          <button class="btn ghost no-drag" id="later2" title="Keep this interval in the queue and deal with it later. It stays pending in Review queue.">Later</button>
+          <button class="btn ghost no-drag" id="skip" title="Discard this interval for good. Nothing gets logged and it leaves the queue. Use it when you did nothing work related.">Skip</button>
           <button class="btn primary wide no-drag" id="log">Log it</button>
         </div>
       </div>
@@ -745,6 +745,13 @@ function boot() {
     if (e.ctrlKey && e.altKey && e.code === "KeyR" && ae && ae.id === "desc") {
       e.preventDefault();
       runCorrection(ae as HTMLTextAreaElement);
+      return;
+    }
+    // Escape anywhere closes the window (the app keeps running in the tray).
+    // If a confirm dialog is open, let it handle Escape instead.
+    if (e.key === "Escape" && !document.querySelector(".modal-overlay")) {
+      e.preventDefault();
+      hideWindow();
     }
   });
 
