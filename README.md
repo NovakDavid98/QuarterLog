@@ -2,7 +2,7 @@
 
 # ⏱️ Quarterlog
 
-**Log your work in quarter-hour increments — drafted by AI from a desktop screenshot, saved to a local Excel file.**
+
 
 ![Platform](https://img.shields.io/badge/platform-Windows-0078D6?logo=windows&logoColor=white)
 ![Go](https://img.shields.io/badge/Go-1.26-00ADD8?logo=go&logoColor=white)
