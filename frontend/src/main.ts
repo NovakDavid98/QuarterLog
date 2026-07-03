@@ -103,6 +103,50 @@ function hideWindow() {
   App().HidePopup();
 }
 
+// confirmDialog shows a styled in-app modal and resolves true/false. Matches the
+// app's look instead of the browser's default confirm box.
+function confirmDialog(opts: {
+  icon?: string;
+  title: string;
+  body: string;
+  confirmText: string;
+  cancelText: string;
+  danger?: boolean;
+}): Promise<boolean> {
+  return new Promise((resolve) => {
+    const overlay = el(`
+      <div class="modal-overlay">
+        <div class="modal" role="dialog" aria-modal="true">
+          ${opts.icon ? `<div class="modal-icon">${opts.icon}</div>` : ""}
+          <div class="modal-title">${esc(opts.title)}</div>
+          <div class="modal-body">${esc(opts.body)}</div>
+          <div class="modal-actions">
+            <button class="btn ghost no-drag" id="m-cancel">${esc(opts.cancelText)}</button>
+            <button class="btn ${opts.danger ? "danger" : "primary"} no-drag" id="m-ok">${esc(opts.confirmText)}</button>
+          </div>
+        </div>
+      </div>
+    `);
+    const close = (v: boolean) => {
+      overlay.classList.remove("show");
+      document.removeEventListener("keydown", onKey);
+      setTimeout(() => overlay.remove(), 180);
+      resolve(v);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") close(false);
+      if (e.key === "Enter") close(true);
+    };
+    overlay.querySelector("#m-ok")?.addEventListener("click", () => close(true));
+    overlay.querySelector("#m-cancel")?.addEventListener("click", () => close(false));
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) close(false); });
+    document.addEventListener("keydown", onKey);
+    root.appendChild(overlay);
+    requestAnimationFrame(() => overlay.classList.add("show"));
+    (overlay.querySelector("#m-cancel") as HTMLElement | null)?.focus();
+  });
+}
+
 // runCorrection sends the description box text to MiniMax to fix spelling and
 // diacritics, replacing the text in place. Triggered by Shift+R.
 let correcting = false;
@@ -111,13 +155,16 @@ async function runCorrection(ta: HTMLTextAreaElement) {
   if (!text || correcting) return;
   // In the confidentiality regime, even the text-only spelling fix leaves the
   // machine — so confirm before sending the typed text to the AI provider.
-  if (
-    confidential &&
-    !window.confirm(
-      "Confidentiality regime is ON.\n\nFixing spelling will send the text you typed to the AI provider (MiniMax). No screenshot is sent.\n\nContinue?"
-    )
-  ) {
-    return;
+  if (confidential) {
+    const ok = await confirmDialog({
+      icon: "🔒",
+      title: "Confidentiality regime is on",
+      body:
+        "Fixing spelling sends the text you just typed to the AI provider (MiniMax). No screenshot is sent — but the words are. Do you want to send this text?",
+      confirmText: "Send text & fix",
+      cancelText: "No, keep it private",
+    });
+    if (!ok) return;
   }
   correcting = true;
   const prev = ta.value;

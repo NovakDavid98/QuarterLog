@@ -56,8 +56,10 @@ Toggle it any time with **`Shift + C`** (or in **Settings → Privacy**). While 
 - **You write the description yourself.** That's the point — nothing about your screen
   is inferred by a remote model.
 - **The only AI feature that still works is the text-only spelling/diacritics fix** —
-  and even that **asks you to confirm first**, because it sends *the words you typed*
-  (never an image) to the provider. If that text is itself sensitive, say no.
+  and even that stops to ask you with a clear **Yes / No** dialog before sending, because
+  it transmits *the words you typed* (never an image) to the provider. Choosing
+  **“No, keep it private”** cancels and nothing is sent. If that text is itself
+  sensitive, say no.
 
 Turn it on before you start confidential work and leave it on; a small **🔒 Confidential**
 badge appears on the popup so you always know the regime is active.
