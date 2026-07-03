@@ -41,3 +41,5 @@ export function ShowSettings():Promise<void>;
 export function Submit(arg1:string,arg2:string,arg3:string,arg4:string):Promise<void>;
 
 export function SubmitManual(arg1:string,arg2:number,arg3:string,arg4:string,arg5:string):Promise<void>;
+
+export function ToggleConfidential():Promise<boolean>;

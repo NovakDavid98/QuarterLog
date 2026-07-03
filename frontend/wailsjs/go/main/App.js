@@ -77,3 +77,7 @@ export function Submit(arg1, arg2, arg3, arg4) {
 export function SubmitManual(arg1, arg2, arg3, arg4, arg5) {
   return window['go']['main']['App']['SubmitManual'](arg1, arg2, arg3, arg4, arg5);
 }
+
+export function ToggleConfidential() {
+  return window['go']['main']['App']['ToggleConfidential']();
+}

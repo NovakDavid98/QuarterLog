@@ -29,9 +29,40 @@ type App struct {
 	tick   *ticker.Ticker
 
 	mu     sync.Mutex
-	recent []string // last few submitted descriptions, for AI continuity
+	recent []string          // last few submitted descriptions, for AI continuity
+	thumbs map[string]string // id -> preview data URI, so we decode each PNG only once
 
 	trayUpdate func(count int) // set by the tray once it's ready
+}
+
+// cachedThumb returns the preview for an interval, decoding the PNG at most once.
+func (a *App) cachedThumb(id, path string) string {
+	a.mu.Lock()
+	if t, ok := a.thumbs[id]; ok {
+		a.mu.Unlock()
+		return t
+	}
+	a.mu.Unlock()
+
+	t, _ := capture.ThumbFromFile(path, 900) // decode outside the lock
+	a.mu.Lock()
+	a.thumbs[id] = t
+	a.mu.Unlock()
+	return t
+}
+
+// putThumb stores an already-generated preview (from capture/recapture).
+func (a *App) putThumb(id, thumb string) {
+	a.mu.Lock()
+	a.thumbs[id] = thumb
+	a.mu.Unlock()
+}
+
+// forgetThumb drops a cached preview once its interval is gone.
+func (a *App) forgetThumb(id string) {
+	a.mu.Lock()
+	delete(a.thumbs, id)
+	a.mu.Unlock()
 }
 
 // updateTrayTitle refreshes the tray tooltip/label with the pending count.
@@ -49,7 +80,7 @@ func NewApp() *App {
 		// with an in-memory-only store is not worth it; log and let startup show it.
 		fmt.Println("queue open error:", err)
 	}
-	return &App{store: store}
+	return &App{store: store, thumbs: map[string]string{}}
 }
 
 // startup wires runtime context and starts the ticker.
@@ -106,6 +137,7 @@ func (a *App) onTick(from, to time.Time) {
 		fmt.Println("queue add error:", err)
 		return
 	}
+	a.putThumb(iv.ID, thumb) // reuse in GetPending instead of re-decoding the PNG
 
 	a.updateTrayTitle()
 	if a.ctx != nil {
@@ -126,7 +158,7 @@ func (a *App) GetPending() []PendingView {
 	items := a.store.List()
 	out := make([]PendingView, 0, len(items))
 	for _, it := range items {
-		thumb, _ := capture.ThumbFromFile(it.ImagePath, 900)
+		thumb := a.cachedThumb(it.ID, it.ImagePath)
 		out = append(out, PendingView{
 			ID: it.ID, Date: it.Date, From: it.From, To: it.To,
 			Hours: it.Hours, Status: it.Status, Thumb: thumb,
@@ -154,6 +186,10 @@ func (a *App) CaptureNow() {
 // Describe runs the screenshot for an interval through the MiniMax vision API,
 // returning a suggested description and (from the configured list) a Type.
 func (a *App) Describe(id string) (minimax.Suggestion, error) {
+	// Defense in depth: never send a screenshot while the confidentiality regime is on.
+	if config.Current().Confidential {
+		return minimax.Suggestion{}, fmt.Errorf("Confidentiality regime is ON — screenshots are never sent to the AI. Type the description yourself.")
+	}
 	it, ok := a.store.Get(id)
 	if !ok {
 		return minimax.Suggestion{}, fmt.Errorf("interval not found")
@@ -212,6 +248,7 @@ func (a *App) Recapture(id string) (string, error) {
 	if err := a.store.Add(&updated); err != nil {
 		return "", err
 	}
+	a.putThumb(id, res.ThumbB64)
 	return res.ThumbB64, nil
 }
 
@@ -251,6 +288,7 @@ func (a *App) Submit(id, description, category, typ string) error {
 	if err := a.store.Remove(id); err != nil {
 		return err
 	}
+	a.forgetThumb(id)
 	a.updateTrayTitle()
 	return nil
 }
@@ -336,6 +374,7 @@ func (a *App) ShowSettings() { a.showLarge("settings") }
 // Dismiss drops an interval without logging it.
 func (a *App) Dismiss(id string) error {
 	err := a.store.Remove(id)
+	a.forgetThumb(id)
 	a.updateTrayTitle()
 	return err
 }
@@ -360,6 +399,15 @@ func (a *App) SaveConfig(cfg config.Config) error {
 		a.tick.Start()
 	}
 	return nil
+}
+
+// ToggleConfidential flips the confidentiality regime and returns the new state.
+// Bound so the Shift+C shortcut can toggle it.
+func (a *App) ToggleConfidential() bool {
+	cfg := config.Current()
+	cfg.Confidential = !cfg.Confidential
+	_ = config.Save(cfg)
+	return cfg.Confidential
 }
 
 // SetPaused toggles capturing on/off.

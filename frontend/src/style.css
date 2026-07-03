@@ -97,6 +97,7 @@ html, body {
   background: rgba(10, 132, 255, 0.14); color: var(--accent);
 }
 .pill.warn { background: rgba(255, 159, 10, 0.16); color: #c77700; }
+.pill.lock { background: rgba(255, 69, 58, 0.16); color: #d33c32; }
 
 .thumb-wrap {
   border-radius: var(--radius-sm);

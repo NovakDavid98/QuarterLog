@@ -29,6 +29,11 @@ type Config struct {
 	Prompt          string `json:"prompt"`          // extra guidance appended to the AI system prompt
 	Paused          bool   `json:"paused"`
 	Autostart       bool   `json:"autostart"`
+
+	// Confidential, when true, is the "confidentiality regime": no screenshot is
+	// ever sent to the AI. Vision/Suggest is hard-blocked; only text-only spelling
+	// repair is allowed (and the UI confirms it first). Toggled by Shift+C.
+	Confidential bool `json:"confidential"`
 }
 
 // DefaultWorklogPath returns <UserHome>\Documents\Quarterlog\worklog.xlsx.

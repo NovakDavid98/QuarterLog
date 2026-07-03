@@ -14,6 +14,7 @@ export namespace config {
 	    prompt: string;
 	    paused: boolean;
 	    autostart: boolean;
+	    confidential: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new Config(source);
@@ -34,6 +35,7 @@ export namespace config {
 	        this.prompt = source["prompt"];
 	        this.paused = source["paused"];
 	        this.autostart = source["autostart"];
+	        this.confidential = source["confidential"];
 	    }
 	}
 

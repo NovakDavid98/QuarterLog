@@ -36,6 +36,7 @@ interface Config {
   prompt: string;
   paused: boolean;
   autostart: boolean;
+  confidential: boolean;
 }
 
 interface Suggestion {
@@ -49,6 +50,8 @@ let cameFromQueue = false;
 // Remembered across entries within a session so you don't re-pick every time.
 let lastCategory = "";
 let lastType = "";
+// Confidentiality regime: when on, no screenshot is ever sent to the AI.
+let confidential = false;
 
 // opts parses a newline/comma-separated config string into an options array.
 function opts(s: string): string[] {
@@ -106,6 +109,16 @@ let correcting = false;
 async function runCorrection(ta: HTMLTextAreaElement) {
   const text = ta.value.trim();
   if (!text || correcting) return;
+  // In the confidentiality regime, even the text-only spelling fix leaves the
+  // machine — so confirm before sending the typed text to the AI provider.
+  if (
+    confidential &&
+    !window.confirm(
+      "Confidentiality regime is ON.\n\nFixing spelling will send the text you typed to the AI provider (MiniMax). No screenshot is sent.\n\nContinue?"
+    )
+  ) {
+    return;
+  }
   correcting = true;
   const prev = ta.value;
   ta.disabled = true;
@@ -151,6 +164,7 @@ async function renderEditor(iv: Pending) {
           <div class="time-range">${esc(iv.from)} – ${esc(iv.to)}</div>
           <div class="pill">${iv.hours.toFixed(2)} h</div>
           ${locked ? `<div class="pill warn">screen locked</div>` : ""}
+          <div class="pill lock" id="confpill" title="No screenshot is sent to the AI. Toggle with Shift+C." style="${confidential ? "" : "display:none;"}">🔒 Confidential</div>
         </div>
         <div class="thumb-wrap" id="thumb">
           ${
@@ -167,7 +181,7 @@ async function renderEditor(iv: Pending) {
           locked ? "Describe your work…" : "Write it yourself, or let AI suggest from the screenshot…"
         }"></textarea>
         <div class="row mt">
-          <button class="btn ghost wide no-drag" id="ai" ${locked ? "disabled" : ""}>✨ Suggest with AI</button>
+          <button class="btn ghost wide no-drag" id="ai" data-locked="${locked ? "1" : "0"}" ${locked || confidential ? "disabled" : ""} title="${confidential ? "Disabled in the confidentiality regime — screenshots are never sent to the AI" : "Send the screenshot to the AI for a suggested description"}">✨ Suggest with AI</button>
           <button class="btn ghost wide no-drag" id="fix" title="Fix spelling & diacritics with AI — or press Shift + R">✓ Fix spelling</button>
         </div>
         <div class="grid2 no-drag" style="margin-top:10px;">
@@ -224,7 +238,7 @@ async function renderEditor(iv: Pending) {
     } finally {
       retakeBtn.disabled = false;
       retakeBtn.innerHTML = original;
-      if (aiBtn) aiBtn.disabled = iv.locked; // enabled once an image exists
+      if (aiBtn) aiBtn.disabled = iv.locked || confidential; // enabled once an image exists
     }
   });
 
@@ -536,6 +550,15 @@ async function renderSettings() {
             Launch Quarterlog at Windows startup
           </label>
         </div>
+
+        <div class="section-title">Privacy</div>
+        <div class="field">
+          <label class="check">
+            <input type="checkbox" id="confidential" ${cfg.confidential ? "checked" : ""}/>
+            Confidentiality regime (toggle anytime with <b>Shift + C</b>)
+          </label>
+          <div class="hint">When ON, <b>no screenshot is ever sent to the AI</b>. “Suggest with AI” is disabled and you type descriptions yourself. Only the text-only spelling fix works — and it asks for confirmation first, because it still sends your typed text to the AI provider.</div>
+        </div>
       </div>
       <div class="footer-bar no-drag">
         <button class="btn ghost" id="cancel">Cancel</button>
@@ -572,9 +595,11 @@ async function renderSettings() {
       prompt: (get("prompt") as HTMLTextAreaElement).value,
       paused: cfg.paused,
       autostart: (get("autostart") as HTMLInputElement).checked,
+      confidential: (get("confidential") as HTMLInputElement).checked,
     };
     try {
       await App().SaveConfig(next);
+      confidential = next.confidential; // keep the shortcut/UI state in sync
       toast("Settings saved ✓");
       hideWindow();
     } catch (e: any) {
@@ -602,13 +627,37 @@ async function renderSettings() {
 }
 
 // ---------- wiring ----------
+// syncConfidentialDom reflects the current regime in an open editor without a
+// full re-render (so typed text isn't lost).
+function syncConfidentialDom() {
+  const pill = document.getElementById("confpill");
+  if (pill) pill.style.display = confidential ? "" : "none";
+  const ai = document.getElementById("ai") as HTMLButtonElement | null;
+  if (ai) ai.disabled = confidential || ai.dataset.locked === "1";
+}
+
 function boot() {
-  // Shift+R inside the description box: fix spelling & diacritics via AI.
+  // Load the confidentiality regime state.
+  App().GetConfig().then((c: Config) => { confidential = !!c.confidential; syncConfidentialDom(); });
+
   document.addEventListener("keydown", (e) => {
     const ae = document.activeElement as HTMLElement | null;
+    // Shift+R inside the description box: fix spelling & diacritics via AI.
     if (e.shiftKey && e.code === "KeyR" && ae && ae.id === "desc") {
       e.preventDefault();
       runCorrection(ae as HTMLTextAreaElement);
+      return;
+    }
+    // Shift+C toggles the confidentiality regime — but not while typing, so
+    // capital C (and Č) still work in text fields.
+    const typing = ae && (ae.tagName === "INPUT" || ae.tagName === "TEXTAREA");
+    if (e.shiftKey && e.code === "KeyC" && !typing) {
+      e.preventDefault();
+      App().ToggleConfidential().then((on: boolean) => {
+        confidential = on;
+        syncConfidentialDom();
+        toast(on ? "🔒 Confidentiality regime ON" : "Confidentiality regime OFF");
+      });
     }
   });
 

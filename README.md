@@ -24,6 +24,55 @@ pick a category and type, and it appends a row to a **local, nicely styled Excel
 
 No cloud service, no SharePoint, no account — the worklog is just an `.xlsx` on your disk.
 
+---
+
+## ⚠️ Privacy: read this before you enable AI
+
+> **Using "Suggest with AI" uploads a screenshot of your desktop to a third-party AI
+> provider (MiniMax).**
+
+That screenshot can contain **anything that was on your screen** for that quarter hour:
+customer data, passwords in a terminal, private messages, source code under NDA,
+medical or legal documents, an email you shouldn't be forwarding to anyone — let alone
+to an external AI service in another jurisdiction.
+
+**This is the single most important thing to understand about Quarterlog.** The app is
+built to make it *hard to leak something by accident*, but the responsibility is yours.
+There are three layers of protection, from lightest to strongest:
+
+| If you… | Use… | What leaves your machine |
+|---|---|---|
+| type the description yourself | just don't press *Suggest with AI* | **nothing** |
+| have one sensitive window on an otherwise-fine screen | **🔄 Retake** | a *new* screenshot after you cover the sensitive part |
+| are doing sensitive work for a while | **🔒 Confidentiality regime** | **nothing — images can't be sent at all** |
+
+### 🔒 The Confidentiality Regime
+
+Toggle it any time with **`Shift + C`** (or in **Settings → Privacy**). While it is ON:
+
+- **No screenshot is ever sent to the AI — full stop.** *Suggest with AI* is disabled,
+  and the block is enforced in the backend too, not just hidden in the UI. Even if
+  something tried to call the vision API, it is refused.
+- **You write the description yourself.** That's the point — nothing about your screen
+  is inferred by a remote model.
+- **The only AI feature that still works is the text-only spelling/diacritics fix** —
+  and even that **asks you to confirm first**, because it sends *the words you typed*
+  (never an image) to the provider. If that text is itself sensitive, say no.
+
+Turn it on before you start confidential work and leave it on; a small **🔒 Confidential**
+badge appears on the popup so you always know the regime is active.
+
+### 🔄 Retake — for one-off sensitive windows
+
+If most of your screen is fine but one window isn't, press **🔄 Retake**. The app hides
+itself, counts down so you can drag another window over the sensitive content, then
+re-shoots — so the screenshot you send never contained the private part in the first place.
+
+> **Bottom line:** if you would not paste it into a public chatbot, do not press *Suggest
+> with AI*. Turn on the Confidentiality Regime and type it yourself.
+
+---
+
 ## ✨ Features
 
 - **Automatic quarter-hour prompts** — a wall-clock-aligned ticker fires at `:00/:15/:30/:45`.
@@ -31,8 +80,11 @@ No cloud service, no SharePoint, no account — the worklog is just an `.xlsx` o
   returns a concise, first-person sentence *and* classifies the work Type. You always
   review and edit before anything is saved.
 - **Privacy-first** — nothing leaves your machine unless you press *Suggest with AI*.
-  If you type the description yourself, no screenshot is ever sent.
-- **Retake screenshot** — cover up anything confidential and re-shoot (the app hides
+  See [Privacy](#️-privacy-read-this-before-you-enable-ai) — it matters.
+- **🔒 Confidentiality regime** (`Shift + C`) — a hard mode that blocks *all* image/vision
+  calls; you type descriptions yourself and only the text-only spelling fix works
+  (with a confirmation). Enforced in the backend, not just the UI.
+- **🔄 Retake screenshot** — cover up anything confidential and re-shoot (the app hides
   itself during the countdown so the popup isn't in the shot).
 - **Spelling & diacritics fix** — one click (or `Shift+R`) cleans up Czech/English text.
 - **Never lose an interval** — miss a popup and it queues up; review pending intervals
@@ -136,6 +188,7 @@ you get a clean sentence instead of a `<think>` block. Paste your API key in Set
 ## ⌨️ Shortcuts
 
 - **`Shift + R`** (in the description box) — fix spelling & diacritics with AI.
+- **`Shift + C`** — toggle the 🔒 Confidentiality Regime on/off.
 
 ## 🗂️ Project structure
 
