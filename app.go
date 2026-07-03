@@ -427,7 +427,12 @@ func (a *App) showPopup() {
 			int(float64(popupW)*scale), int(float64(popupH)*scale), int(24*scale))
 		wrt.WindowSetPosition(a.ctx, x, y)
 	}
+	// Show and force it to the front. After a hide/close the window can otherwise
+	// come back behind the foreground app (it has no taskbar button), which makes
+	// it look like nothing happened.
+	wrt.WindowUnminimise(a.ctx)
 	wrt.WindowShow(a.ctx)
+	wrt.WindowSetAlwaysOnTop(a.ctx, true)
 }
 
 // primaryScale returns the primary display's DPI scale (physical/logical), e.g.
@@ -490,7 +495,9 @@ func (a *App) showLarge(view string) {
 	}
 	wrt.WindowSetSize(a.ctx, 720, 640)
 	wrt.WindowCenter(a.ctx)
+	wrt.WindowUnminimise(a.ctx)
 	wrt.WindowShow(a.ctx)
+	wrt.WindowSetAlwaysOnTop(a.ctx, true)
 	wrt.EventsEmit(a.ctx, "navigate", view)
 }
 
