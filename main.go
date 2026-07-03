@@ -4,6 +4,7 @@ import (
 	"context"
 	"embed"
 	"fmt"
+	"runtime"
 
 	"github.com/energye/systray"
 	"github.com/wailsapp/wails/v2"
@@ -50,7 +51,14 @@ func main() {
 		},
 		OnStartup: func(ctx context.Context) {
 			app.startup(ctx)
-			go systray.Run(func() { onTrayReady(ctx, app) }, func() {})
+			// The systray runs a Win32 GetMessage loop, whose message queue is bound
+			// to the OS thread that created the tray window. Pin this goroutine to its
+			// OS thread so the Go scheduler can't migrate it (e.g. across sleep/resume),
+			// which would leave the tray icon alive but its right-click menu dead.
+			go func() {
+				runtime.LockOSThread()
+				systray.Run(func() { onTrayReady(ctx, app) }, func() {})
+			}()
 		},
 		Bind: []interface{}{app},
 	})
