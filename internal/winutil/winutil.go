@@ -3,11 +3,56 @@
 package winutil
 
 import (
+	"runtime"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/registry"
 )
+
+// Hotkey modifier flags for RunHotkey (Win32 RegisterHotKey MOD_* values).
+const (
+	ModAlt      = 0x0001
+	ModControl  = 0x0002
+	ModShift    = 0x0004
+	ModNoRepeat = 0x4000
+)
+
+// RunHotkey registers a system-wide hotkey and calls fire() each time it's
+// pressed. It runs its own pinned message-loop goroutine (WM_HOTKEY is delivered
+// to the registering thread's queue, so the thread must stay put and pump).
+func RunHotkey(modifiers, vk uint32, fire func()) {
+	go func() {
+		runtime.LockOSThread()
+		user32 := windows.NewLazySystemDLL("user32.dll")
+		regHotKey := user32.NewProc("RegisterHotKey")
+		getMessage := user32.NewProc("GetMessageW")
+
+		const wmHotkey = 0x0312
+		if r, _, _ := regHotKey.Call(0, 1, uintptr(modifiers), uintptr(vk)); r == 0 {
+			return // registration failed (e.g. combo already taken)
+		}
+
+		type msg struct {
+			hwnd    uintptr
+			message uint32
+			wParam  uintptr
+			lParam  uintptr
+			time    uint32
+			pt      struct{ x, y int32 }
+		}
+		var m msg
+		for {
+			r, _, _ := getMessage.Call(uintptr(unsafe.Pointer(&m)), 0, 0, 0)
+			if int32(r) <= 0 {
+				return
+			}
+			if m.message == wmHotkey {
+				fire()
+			}
+		}
+	}()
+}
 
 const runKey = `Software\Microsoft\Windows\CurrentVersion\Run`
 const appValueName = "Quarterlog"

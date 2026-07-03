@@ -59,6 +59,11 @@ func main() {
 				runtime.LockOSThread()
 				systray.Run(func() { onTrayReady(ctx, app) }, func() {})
 			}()
+
+			// Global Ctrl+Alt+C toggles the confidentiality regime from anywhere.
+			winutil.RunHotkey(winutil.ModControl|winutil.ModAlt|winutil.ModNoRepeat, 'C', func() {
+				go app.onConfidentialHotkey()
+			})
 		},
 		Bind: []interface{}{app},
 	})

@@ -48,7 +48,9 @@ There are three layers of protection, from lightest to strongest:
 
 ### 🔒 The Confidentiality Regime
 
-Toggle it any time with **`Shift + C`** (or in **Settings → Privacy**). While it is ON:
+Toggle it any time — **even when the app isn't focused** — with the global
+**`Ctrl + Alt + C`** hotkey (or in **Settings → Privacy**). A fading toast confirms the
+new state on screen. While it is ON:
 
 - **No screenshot is ever sent to the AI — full stop.** *Suggest with AI* is disabled,
   and the block is enforced in the backend too, not just hidden in the UI. Even if
@@ -83,12 +85,12 @@ re-shoots — so the screenshot you send never contained the private part in the
   review and edit before anything is saved.
 - **Privacy-first** — nothing leaves your machine unless you press *Suggest with AI*.
   See [Privacy](#️-privacy-read-this-before-you-enable-ai) — it matters.
-- **🔒 Confidentiality regime** (`Shift + C`) — a hard mode that blocks *all* image/vision
+- **🔒 Confidentiality regime** (global `Ctrl + Alt + C`) — a hard mode that blocks *all* image/vision
   calls; you type descriptions yourself and only the text-only spelling fix works
   (with a confirmation). Enforced in the backend, not just the UI.
 - **🔄 Retake screenshot** — cover up anything confidential and re-shoot (the app hides
   itself during the countdown so the popup isn't in the shot).
-- **Spelling & diacritics fix** — one click (or `Shift+R`) cleans up Czech/English text.
+- **Spelling & diacritics fix** — one click (or `Ctrl+Alt+R`) cleans up Czech/English text.
 - **Never lose an interval** — miss a popup and it queues up; review pending intervals
   in a batch later. *Skip* anything that wasn't work.
 - **Styled local Excel output** — bold header, frozen row, autofilter, borders, proper
@@ -111,7 +113,7 @@ Every control on the interval popup:
 | **⚙️ Settings** | Opens the settings screen. |
 | **Description box** | What you did. Type it yourself, or let AI fill it in. |
 | **✨ Suggest with AI** | Sends the screenshot to MiniMax-M3 → editable draft + auto-picked Type. |
-| **✓ Fix spelling** | Fixes spelling & diacritics via AI (or press `Shift+R`). |
+| **✓ Fix spelling** | Fixes spelling & diacritics via AI (or press `Ctrl+Alt+R`). |
 | **Category from order / Type** | Dropdowns populated from Settings; Type is pre-selected by the AI. |
 | **Later** | Keep the interval in the queue for later. |
 | **Skip** | Discard the interval (nothing to log). |
@@ -189,8 +191,9 @@ you get a clean sentence instead of a `<think>` block. Paste your API key in Set
 
 ## ⌨️ Shortcuts
 
-- **`Shift + R`** (in the description box) — fix spelling & diacritics with AI.
-- **`Shift + C`** — toggle the 🔒 Confidentiality Regime on/off.
+- **`Ctrl + Alt + R`** (in the description box) — fix spelling & diacritics with AI.
+- **`Ctrl + Alt + C`** — toggle the 🔒 Confidentiality Regime on/off. This one is a
+  **global** hotkey: it works from any app, and shows a fading on-screen toast.
 
 ## 🗂️ Project structure
 

@@ -211,7 +211,7 @@ async function renderEditor(iv: Pending) {
           <div class="time-range">${esc(iv.from)} – ${esc(iv.to)}</div>
           <div class="pill">${iv.hours.toFixed(2)} h</div>
           ${locked ? `<div class="pill warn">screen locked</div>` : ""}
-          <div class="pill lock" id="confpill" title="No screenshot is sent to the AI. Toggle with Shift+C." style="${confidential ? "" : "display:none;"}">🔒 Confidential</div>
+          <div class="pill lock" id="confpill" title="No screenshot is sent to the AI. Toggle with Ctrl+Alt+C." style="${confidential ? "" : "display:none;"}">🔒 Confidential</div>
         </div>
         <div class="thumb-wrap" id="thumb">
           ${
@@ -229,7 +229,7 @@ async function renderEditor(iv: Pending) {
         }"></textarea>
         <div class="row mt">
           <button class="btn ghost wide no-drag" id="ai" data-locked="${locked ? "1" : "0"}" ${locked || confidential ? "disabled" : ""} title="${confidential ? "Disabled in the confidentiality regime — screenshots are never sent to the AI" : "Send the screenshot to the AI for a suggested description"}">✨ Suggest with AI</button>
-          <button class="btn ghost wide no-drag" id="fix" title="Fix spelling & diacritics with AI — or press Shift + R">✓ Fix spelling</button>
+          <button class="btn ghost wide no-drag" id="fix" title="Fix spelling & diacritics with AI — or press Ctrl + Alt + R">✓ Fix spelling</button>
         </div>
         <div class="grid2 no-drag" style="margin-top:10px;">
           <div class="field" style="margin-bottom:0;">
@@ -489,7 +489,7 @@ async function renderManual() {
         <div class="field">
           <label>What did you work on?</label>
           <textarea id="desc" placeholder="Describe the task…" style="min-height:96px;"></textarea>
-          <div class="row mt"><button class="btn ghost wide no-drag" id="fix" type="button" title="Fix spelling & diacritics with AI — or press Shift + R">✓ Fix spelling</button></div>
+          <div class="row mt"><button class="btn ghost wide no-drag" id="fix" type="button" title="Fix spelling & diacritics with AI — or press Ctrl + Alt + R">✓ Fix spelling</button></div>
         </div>
       </div>
       <div class="footer-bar no-drag">
@@ -630,7 +630,7 @@ async function renderSettings() {
         <div class="field">
           <label class="check">
             <input type="checkbox" id="confidential" ${cfg.confidential ? "checked" : ""}/>
-            Confidentiality regime (toggle anytime with <b>Shift + C</b>)
+            Confidentiality regime (toggle anytime with <b>Ctrl + Alt + C</b>)
           </label>
           <div class="hint">When ON, <b>no screenshot is ever sent to the AI</b>. “Suggest with AI” is disabled and you type descriptions yourself. Only the text-only spelling fix works — and it asks for confirmation first, because it still sends your typed text to the AI provider.</div>
         </div>
@@ -738,24 +738,13 @@ function boot() {
   // Load the confidentiality regime state.
   App().GetConfig().then((c: Config) => { confidential = !!c.confidential; syncConfidentialDom(); });
 
+  // Ctrl+Alt+R inside the description box: fix spelling & diacritics via AI.
+  // (The confidentiality toggle, Ctrl+Alt+C, is a global OS hotkey handled in Go.)
   document.addEventListener("keydown", (e) => {
     const ae = document.activeElement as HTMLElement | null;
-    // Shift+R inside the description box: fix spelling & diacritics via AI.
-    if (e.shiftKey && e.code === "KeyR" && ae && ae.id === "desc") {
+    if (e.ctrlKey && e.altKey && e.code === "KeyR" && ae && ae.id === "desc") {
       e.preventDefault();
       runCorrection(ae as HTMLTextAreaElement);
-      return;
-    }
-    // Shift+C toggles the confidentiality regime — but not while typing, so
-    // capital C (and Č) still work in text fields.
-    const typing = ae && (ae.tagName === "INPUT" || ae.tagName === "TEXTAREA");
-    if (e.shiftKey && e.code === "KeyC" && !typing) {
-      e.preventDefault();
-      App().ToggleConfidential().then((on: boolean) => {
-        confidential = on;
-        syncConfidentialDom();
-        toast(on ? "🔒 Confidentiality regime ON" : "Confidentiality regime OFF");
-      });
     }
   });
 
@@ -768,6 +757,18 @@ function boot() {
     if (view === "settings") renderSettings();
     else if (view === "manual") renderManual();
     else renderQueue();
+  });
+
+  // Confidentiality toggled via the global Ctrl+Alt+C hotkey.
+  rt().EventsOn("confidential-state", (on: boolean) => {
+    confidential = on;
+    syncConfidentialDom();
+  });
+  rt().EventsOn("toast", (msg: string) => toast(msg));
+  // Shown when the app was hidden: clear the view so only the toast floats.
+  rt().EventsOn("flash-toast", (msg: string) => {
+    root.replaceChildren();
+    toast(msg);
   });
 
   renderQueue();

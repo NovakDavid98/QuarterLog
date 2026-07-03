@@ -28,11 +28,24 @@ type App struct {
 	store  *queue.Store
 	tick   *ticker.Ticker
 
-	mu     sync.Mutex
-	recent []string          // last few submitted descriptions, for AI continuity
-	thumbs map[string]string // id -> preview data URI, so we decode each PNG only once
+	mu      sync.Mutex
+	recent  []string          // last few submitted descriptions, for AI continuity
+	thumbs  map[string]string // id -> preview data URI, so we decode each PNG only once
+	visible bool              // whether the window is currently showing an app view
 
 	trayUpdate func(count int) // set by the tray once it's ready
+}
+
+func (a *App) setVisible(v bool) {
+	a.mu.Lock()
+	a.visible = v
+	a.mu.Unlock()
+}
+
+func (a *App) isVisible() bool {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return a.visible
 }
 
 // cachedThumb returns the preview for an interval, decoding the PNG at most once.
@@ -434,9 +447,54 @@ func (a *App) SetPaused(paused bool) error {
 
 // HidePopup hides the window (called when the user finishes/snoozes).
 func (a *App) HidePopup() {
+	a.setVisible(false)
 	if a.ctx != nil {
 		wrt.WindowHide(a.ctx)
 	}
+}
+
+// onConfidentialHotkey toggles the confidentiality regime from the global
+// Ctrl+Alt+C hotkey and shows a fading toast — even when the app is hidden.
+func (a *App) onConfidentialHotkey() {
+	on := a.ToggleConfidential()
+	msg := "Confidentiality regime OFF"
+	if on {
+		msg = "🔒 Confidentiality regime ON"
+	}
+	if a.ctx == nil {
+		return
+	}
+	wrt.EventsEmit(a.ctx, "confidential-state", on)
+	if a.isVisible() {
+		wrt.EventsEmit(a.ctx, "toast", msg) // window already open — overlay the toast
+	} else {
+		a.flashToast(msg)
+	}
+}
+
+// flashToast briefly shows the window as a small, transparent toast (used when
+// the app is otherwise hidden), then hides it again.
+func (a *App) flashToast(msg string) {
+	if a.ctx == nil {
+		return
+	}
+	const tw, th = 360, 90
+	wrt.WindowSetSize(a.ctx, tw, th)
+	if ww, wh := winutil.WorkArea(); ww > 0 && wh > 0 {
+		scale := a.primaryScale()
+		w, h, m := int(float64(tw)*scale), int(float64(th)*scale), int(24*scale)
+		wrt.WindowSetPosition(a.ctx, (ww-w)/2, wh-h-m)
+	}
+	wrt.WindowShow(a.ctx)
+	wrt.WindowSetAlwaysOnTop(a.ctx, true)
+	wrt.EventsEmit(a.ctx, "flash-toast", msg)
+	a.setVisible(false) // it's a transient toast, not an app view
+	go func() {
+		time.Sleep(2200 * time.Millisecond)
+		if a.ctx != nil && !a.isVisible() {
+			wrt.WindowHide(a.ctx)
+		}
+	}()
 }
 
 // --- helpers ---
@@ -496,6 +554,7 @@ func (a *App) showPopup() {
 	wrt.WindowUnminimise(a.ctx)
 	wrt.WindowShow(a.ctx)
 	wrt.WindowSetAlwaysOnTop(a.ctx, true)
+	a.setVisible(true)
 }
 
 // primaryScale returns the primary display's DPI scale (physical/logical), e.g.
@@ -561,6 +620,7 @@ func (a *App) showLarge(view string) {
 	wrt.WindowUnminimise(a.ctx)
 	wrt.WindowShow(a.ctx)
 	wrt.WindowSetAlwaysOnTop(a.ctx, true)
+	a.setVisible(true)
 	wrt.EventsEmit(a.ctx, "navigate", view)
 }
 
