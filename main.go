@@ -73,17 +73,10 @@ func onTrayReady(ctx context.Context, app *App) {
 	systray.AddSeparator()
 	mQuit := systray.AddMenuItem("Quit", "Exit Quarterlog")
 
-	// Wire the tray -> app updates.
-	app.trayUpdate = func(count int) {
-		if count > 0 {
-			mReview.SetTitle(fmt.Sprintf("Review queue (%d)", count))
-			systray.SetTooltip(fmt.Sprintf("Quarterlog — %d pending", count))
-		} else {
-			mReview.SetTitle("Review queue")
-			systray.SetTooltip("Quarterlog — worklog assistant")
-		}
-	}
-	app.updateTrayTitle()
+	// NOTE: we deliberately do NOT mutate the tray menu/tooltip from background
+	// goroutines. Win32 menu + tray-icon objects have thread affinity, and updating
+	// them off the tray's message-loop thread (e.g. from the ticker) wedges the
+	// right-click menu. The pending count lives in the Review-queue window instead.
 
 	// Tray click handlers run on the tray's message-loop thread, so any real
 	// work (screen capture, window ops) is dispatched to a goroutine to keep the
