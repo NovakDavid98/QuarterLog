@@ -10,7 +10,7 @@
 ![MiniMax](https://img.shields.io/badge/AI-MiniMax--M3-6E56CF)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-<img src="docs/img/screenshot.png" alt="Quarterlog popup" width="380" />
+<img src="docs/img/app.png" alt="Quarterlog popup" width="380" />
 
 </div>
 
@@ -101,7 +101,7 @@ re-shoots — so the screenshot you send never contained the private part in the
 
 ## 🖥️ The main screen
 
-<img src="docs/img/screenshot.png" alt="Quarterlog main popup" width="360" />
+<img src="docs/img/app.png" alt="Quarterlog main popup" width="360" />
 
 Every control on the interval popup:
 
