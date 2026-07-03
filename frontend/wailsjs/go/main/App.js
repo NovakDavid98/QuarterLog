@@ -6,6 +6,14 @@ export function CaptureNow() {
   return window['go']['main']['App']['CaptureNow']();
 }
 
+export function ClearQueue() {
+  return window['go']['main']['App']['ClearQueue']();
+}
+
+export function ClearWorklog() {
+  return window['go']['main']['App']['ClearWorklog']();
+}
+
 export function Correct(arg1) {
   return window['go']['main']['App']['Correct'](arg1);
 }

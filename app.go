@@ -339,6 +339,11 @@ func (a *App) SetFilePath(path string) error {
 	return config.Save(cfg)
 }
 
+// ClearWorklog empties the worklog Excel file (keeps the styled header).
+func (a *App) ClearWorklog() error {
+	return xlsxlog.Clear(a.worklogPath())
+}
+
 // OpenWorklogFile opens the worklog in the default app (Excel), creating an empty
 // styled file first if it doesn't exist yet.
 func (a *App) OpenWorklogFile() error {
@@ -377,6 +382,16 @@ func (a *App) Dismiss(id string) error {
 	a.forgetThumb(id)
 	a.updateTrayTitle()
 	return err
+}
+
+// ClearQueue discards every pending interval.
+func (a *App) ClearQueue() error {
+	for _, it := range a.store.List() {
+		_ = a.store.Remove(it.ID)
+		a.forgetThumb(it.ID)
+	}
+	a.updateTrayTitle()
+	return nil
 }
 
 // GetConfig returns the current settings.

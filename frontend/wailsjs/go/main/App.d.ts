@@ -6,6 +6,10 @@ import {main} from '../models';
 
 export function CaptureNow():Promise<void>;
 
+export function ClearQueue():Promise<void>;
+
+export function ClearWorklog():Promise<void>;
+
 export function Correct(arg1:string):Promise<string>;
 
 export function Describe(arg1:string):Promise<minimax.Suggestion>;

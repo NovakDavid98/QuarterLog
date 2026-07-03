@@ -101,6 +101,31 @@ func Append(path string, e Entry) error {
 	return nil
 }
 
+// Clear empties the worklog: it overwrites the file with a fresh, styled,
+// header-only workbook (removing every logged row).
+func Clear(path string) error {
+	mu.Lock()
+	defer mu.Unlock()
+	if path == "" {
+		return fmt.Errorf("worklog file path is not set")
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	f, err := newFile()
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	if err := f.SaveAs(path); err != nil {
+		if isLocked(err) {
+			return ErrFileOpen
+		}
+		return err
+	}
+	return nil
+}
+
 // EnsureFile creates an empty, styled worklog file at path if it doesn't exist.
 func EnsureFile(path string) error {
 	mu.Lock()

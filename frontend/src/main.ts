@@ -273,8 +273,7 @@ async function renderEditor(iv: Pending) {
       await App().Submit(iv.id, text, catEl.value, typeEl.value);
       lastCategory = catEl.value;
       lastType = typeEl.value;
-      toast("Logged ✓");
-      await afterResolve();
+      hideWindow(); // dismiss the popup as soon as it's logged
     } catch (e: any) {
       toast(String(e?.message ?? e), true);
       logBtn.disabled = false;
@@ -334,6 +333,7 @@ async function renderQueue(preloaded?: Pending[]) {
             iv.locked ? " · screen was locked" : ""
           }</div>
         </div>
+        <button class="qdel" data-del="${iv.id}" title="Delete this interval" aria-label="Delete">🗑</button>
         <div class="chev">›</div>
       </div>`
     )
@@ -347,6 +347,7 @@ async function renderQueue(preloaded?: Pending[]) {
           <div class="sub">${pending.length} to review</div>
         </div>
         <div class="spacer"></div>
+        ${pending.length > 0 ? `<button class="btn ghost sm no-drag" id="clearall">Clear all</button>` : ""}
         <button class="iconbtn no-drag" id="close" title="Close">✕</button>
       </div>
       <div class="content">
@@ -366,6 +367,33 @@ async function renderQueue(preloaded?: Pending[]) {
       if (iv) renderEditor(iv);
     });
   });
+
+  // Per-item delete (doesn't open the editor).
+  shell.querySelectorAll<HTMLButtonElement>(".qdel").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.del!;
+      btn.disabled = true;
+      try {
+        await App().Dismiss(id);
+        renderQueue(pending.filter((p) => p.id !== id));
+      } catch (err: any) {
+        btn.disabled = false;
+        toast(String(err?.message ?? err), true);
+      }
+    });
+  });
+
+  shell.querySelector("#clearall")?.addEventListener("click", async () => {
+    if (!window.confirm(`Delete all ${pending.length} pending interval(s)? This can't be undone.`)) return;
+    try {
+      await App().ClearQueue();
+      renderQueue([]);
+    } catch (err: any) {
+      toast(String(err?.message ?? err), true);
+    }
+  });
+
   shell.querySelector("#close")?.addEventListener("click", hideWindow);
 }
 
@@ -559,6 +587,12 @@ async function renderSettings() {
           </label>
           <div class="hint">When ON, <b>no screenshot is ever sent to the AI</b>. “Suggest with AI” is disabled and you type descriptions yourself. Only the text-only spelling fix works — and it asks for confirmation first, because it still sends your typed text to the AI provider.</div>
         </div>
+
+        <div class="section-title">Danger zone</div>
+        <div class="field">
+          <button class="btn danger no-drag" id="clearxls" type="button">🗑 Delete all rows from the worklog…</button>
+          <div class="hint">Permanently empties the Excel file (keeps the styled header). You'll be asked to type <b>DELETE</b> to confirm.</div>
+        </div>
       </div>
       <div class="footer-bar no-drag">
         <button class="btn ghost" id="cancel">Cancel</button>
@@ -618,6 +652,23 @@ async function renderSettings() {
     try {
       await App().SetFilePath((get("filePath") as HTMLInputElement).value.trim());
       await App().RevealWorklogFolder();
+    } catch (e: any) {
+      toast(String(e?.message ?? e), true);
+    }
+  });
+  shell.querySelector("#clearxls")?.addEventListener("click", async () => {
+    const ans = window.prompt(
+      "This permanently deletes EVERY row in your worklog Excel file.\n\nType DELETE to confirm:"
+    );
+    if (ans === null) return; // cancelled
+    if (ans !== "DELETE") {
+      toast("Not deleted — you must type DELETE exactly.", true);
+      return;
+    }
+    try {
+      await App().SetFilePath((get("filePath") as HTMLInputElement).value.trim());
+      await App().ClearWorklog();
+      toast("Worklog cleared ✓");
     } catch (e: any) {
       toast(String(e?.message ?? e), true);
     }
