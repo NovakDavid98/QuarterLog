@@ -1,0 +1,60 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch: # allows building a release manually from the Actions tab
+
+permissions:
+  contents: write # needed to create the release and upload the binary
+
+jobs:
+  build-windows:
+    name: Build Windows binary
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+          cache: true
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+      - name: Build
+        run: wails build -platform windows/amd64 -clean
+
+      - name: Show output
+        run: dir build\bin
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Quarterlog ${{ github.ref_name }}
+          draft: false
+          generate_release_notes: true
+          files: build/bin/quarterlog.exe
+          body: |
+            ### Quarterlog ${{ github.ref_name }}
+
+            Download **`quarterlog.exe`** below and run it. It lives in your system tray
+            (look for the blue **Q**, possibly under the `^` overflow arrow).
+
+            **First run:** right-click the tray icon → **Settings** → paste your MiniMax
+            API key, set your Categories/Types and the worklog file path, then **Save**.
+            Use **Log now** to try the full flow.
+
+            Requires Windows 10/11 with the WebView2 runtime (present on modern Windows).
+
+            > Windows SmartScreen may warn about an unsigned binary. The build is produced
+            > by GitHub Actions straight from this repository — see the Actions log for
+            > this tag.

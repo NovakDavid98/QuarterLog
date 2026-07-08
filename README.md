@@ -136,6 +136,21 @@ flowchart LR
 Screenshots are held locally in a queue until you log or skip them, so a missed popup
 (or a laptop that went to sleep) never means a lost interval.
 
+## ⬇️ Download
+
+Grab the latest **`quarterlog.exe`** from the
+[**Releases page**](https://github.com/NovakDavid98/QuarterLog/releases/latest) and run
+it. No installer: it drops straight into your system tray (blue **Q**, possibly under
+the `^` overflow arrow). Requires Windows 10/11 with the WebView2 runtime.
+
+On first run, open **Settings** from the tray and paste your MiniMax API key, set your
+Categories/Types and the worklog file path.
+
+> Windows SmartScreen may warn that the binary is unsigned. It's built by GitHub Actions
+> directly from this repo, so you can inspect the build log for any release tag.
+
+Prefer to build it yourself? See below.
+
 ## 📦 Prerequisites
 
 - **Windows 10/11**
